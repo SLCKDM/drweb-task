@@ -9,6 +9,23 @@ from xml.sax import handler
 
 logging.basicConfig(level=logging.DEBUG)
 
+class CustomException(Exception):
+    def __init__(self, msg: str, *args: object) -> None:
+        super().__init__(*args)
+        self.msg = msg
+
+class AppException(CustomException):
+    ''' raise when exception occurs during app layer '''
+
+class CommandException(CustomException):
+    ''' raise when exception occurs during command layer '''
+
+class NoCommandFoundException(CommandException): ...
+
+class CommandExecutionException(CommandException): ...
+
+class CommandParseException(CommandException): ...
+
 
 class Data(UserDict): ...
 
@@ -51,7 +68,10 @@ class App:
             cmd_input = input('>')
             cmd_method, args = Command.parse(cmd_input)
             cmd = self.handler.commands[cmd_method]
-            cmd.execute(*args)
+            try:
+                cmd.execute(*args)
+            except KeyboardInterrupt:
+                break
 
 
 class Handler:
@@ -117,6 +137,13 @@ class SET(Command):
     def execute(self, var, val) -> None:
         super().execute(var, None)
         app.db.operation2()
+
+@Handler.register_command
+class END(Command):
+    method = 'END'
+
+    def execute(self, var=None, val=None) -> None:
+        raise KeyboardInterrupt
 
 
 db = DataBase(Data())
