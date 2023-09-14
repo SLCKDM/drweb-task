@@ -4,7 +4,7 @@ from abc import ABC, ABCMeta, abstractmethod
 from collections import UserDict
 import functools
 import logging
-from typing import Any
+from typing import Any, Type
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -154,7 +154,6 @@ class AbstractCommand(ABC):
 
 
 class Command(AbstractCommand, metaclass=CommandMetadata):
-    __metaclass__ = CommandMetadata
     method: str
 
     def __init__(self, method: str | None = None) -> None:
@@ -180,6 +179,39 @@ class Command(AbstractCommand, metaclass=CommandMetadata):
 
     def __repr__(self):
         return f'<{self.__class__.__name__}>'
+
+
+
+
+
+
+class Handler:
+    _commands = {}
+    _app: App
+
+    @property
+    def app(self):
+        return self.app
+
+    @app.setter
+    def app(self, app: App):
+        self.app = app
+
+    @classmethod
+    def register_command(cls, cmd: Type['Command']):
+        cls._commands[cmd.method] = cmd
+        @functools.wraps(cmd)
+        def wrapper(*args, **kwargs):
+            return cmd(*args, **kwargs)
+        return wrapper
+
+    @property
+    def commands(self):
+        return self._commands
+
+
+
+
 
 
 @App.register_command
